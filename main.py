@@ -6,6 +6,12 @@ class Profile(BaseModel):
     email: str
     age: int
 
+class Product(BaseModel):
+    name: str
+    price: int
+    discount: int
+    discount_price: float
+
 app = FastAPI()
 
 @app.get('/')
@@ -29,5 +35,11 @@ def movies():
     return {'movie list': ['Movie 1', 'Movie 2']}
 
 @app.post('/adduser')
-def addProfile(profile: Profile):
+def add_profile(profile: Profile):
     return profile
+
+@app.post('/addproduct')
+def add_product(product: Product):
+    product.discount_price = product.price \
+        - (product.price * product.discount) / 100
+    return product
