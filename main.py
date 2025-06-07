@@ -38,8 +38,8 @@ def movies():
 def add_profile(profile: Profile):
     return profile
 
-@app.post('/addproduct')
-def add_product(product: Product):
+@app.post('/addproduct/{product_id}')
+def add_product(product: Product, product_id: int, category: str):
     product.discount_price = product.price \
         - (product.price * product.discount) / 100
-    return product
+    return {'product_id': product_id, 'product': product, 'category': category}
