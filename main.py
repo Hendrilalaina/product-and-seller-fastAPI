@@ -1,4 +1,10 @@
 from fastapi import FastAPI
+from pydantic import BaseModel
+
+class Profile(BaseModel):
+    name: str
+    email: str
+    age: int
 
 app = FastAPI()
 
@@ -21,3 +27,7 @@ def movie(id):
 @app.get('/movies')
 def movies():
     return {'movie list': ['Movie 1', 'Movie 2']}
+
+@app.post('/adduser')
+def addProfile(profile: Profile):
+    return profile
