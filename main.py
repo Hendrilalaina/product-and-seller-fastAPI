@@ -6,6 +6,14 @@ app = FastAPI()
 def home():
     return "Hello world"
 
+@app.get('/user/admin')
+def admin():
+    return {"Your are in the admin route"}
+
+@app.get('/user/{username}')
+def profile(username: str):
+    return {f"This is a profile page for {username}"}
+
 @app.get('/movies/{id}')
 def movie(id):
     return {f"This is the movie of {id}"}
