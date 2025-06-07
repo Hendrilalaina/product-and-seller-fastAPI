@@ -21,6 +21,12 @@ class Product(BaseModel):
     tags: Set[str]
     image: List[Image]
 
+class Offer(BaseModel):
+    name: str
+    description: str
+    price: int
+    products: List[Product]
+
 class User(BaseModel):
     name: str
     email: str
@@ -47,16 +53,20 @@ def movie(id):
 def movies():
     return {'movie list': ['Movie 1', 'Movie 2']}
 
-@app.post('/adduser')
+@app.post('/user')
 def add_profile(profile: Profile):
     return profile
 
-@app.post('/addproduct/{product_id}')
+@app.post('/product/{product_id}')
 def add_product(product: Product, product_id: int, category: str):
     product.discount_price = product.price \
         - (product.price * product.discount) / 100
     return {'product_id': product_id, 'product': product, 'category': category}
 
 @app.post('/purchase')
-def purchase(user: User, product: Product):
+def add_purchase(user: User, product: Product):
     return {'user': user, 'product': product}
+
+@app.post('/offer')
+def add_offer(offer: Offer):
+    return {'offer': offer}
