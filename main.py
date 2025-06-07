@@ -1,5 +1,6 @@
 from fastapi import FastAPI
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
+from typing import List
 
 class Profile(BaseModel):
     name: str
@@ -8,9 +9,12 @@ class Profile(BaseModel):
 
 class Product(BaseModel):
     name: str
-    price: int
+    price: int = Field(title="Price of the product",
+                        description="Must greater than 0",
+                        gt=0)
     discount: int
     discount_price: float
+    tags: List[str] = []
 
 class User(BaseModel):
     name: str
