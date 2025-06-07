@@ -12,38 +12,15 @@ class Image(BaseModel):
     name: str
 
 class Product(BaseModel):
-    name: str
+    name: str = Field(examples=["Laptop"])
     price: int = Field(title="Price of the product",
                         description="Must greater than 0",
                         gt=0)
     discount: int
     discount_price: float
-    tags: Set[str]
+    tags: Set[str] = Field(examples=[["it", "electronics"]])
     images: List[Image]
 
-    model_config = {
-        "json_schema_extra": {
-            "examples" : [
-                {
-                    "name": "Laptop",
-                    "price": 192,
-                    "discount": 23,
-                    "discount_price": 2,
-                    "tags": ["it", "computer"],
-                    "images": [
-                        {
-                            "url": "http://localhost",
-                            "name": "laptop image"
-                        },
-                        {
-                            "url": "http://127.0.0.1",
-                            "name": "computer image"
-                        }
-                    ]
-                }
-            ]
-        }
-    }
 
 class Offer(BaseModel):
     name: str
