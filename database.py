@@ -1,9 +1,9 @@
 import motor.motor_asyncio
-from fastapi import FastAPI, Body
+from fastapi import FastAPI, Body, status
 from typing_extensions import Annotated
 from pydantic.functional_validators import BeforeValidator
 from pydantic import BaseModel, Field, ConfigDict
-from typing import Optional
+from typing import Optional, List
 from bson import ObjectId
 
 app = FastAPI()
@@ -23,21 +23,17 @@ class Product(BaseModel):
     price: int
     discount: int
     discount_price: float
-    # model_config = ConfigDict(
-    #     populate_by_name=True,
-    #     arbitrary_types_allowed=True
-    # )
+    model_config = ConfigDict(
+        populate_by_name=True,
+        arbitrary_types_allowed=True,
+        json_encoders={ObjectId: str}
+    )
 
-def product_helper(product) -> dict:
-    return {
-        "id": str(product["_id"]),
-        "name": product["name"],
-        "price": product["price"],
-        "discount": product["discount"],
-        "discount_price": product["discount_price"],
-    }
-
-@app.post('/product')
+@app.post('/product',
+    response_description="Add new product",
+    response_model=Product,
+    status_code=status.HTTP_201_CREATED,
+    response_model_by_alias=False,)
 async def add_product(product: Product):
     print("Call API '/product'")
     new_product = await product_collection.insert_one(
@@ -46,4 +42,12 @@ async def add_product(product: Product):
     created_product = await product_collection.find_one(
         {'_id': new_product.inserted_id}
     )
-    return product_helper(created_product)
+    return created_product
+
+@app.get('/products',
+    response_model=List[Product],
+    response_model_by_alias=False
+)
+async def get_products():
+    products = await product_collection.find().to_list()
+    return products
