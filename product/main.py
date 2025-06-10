@@ -20,9 +20,13 @@ def parse_object_id(id: str):
             detail=f"'{id}' is not a valid ObjectId.",
         )
 
-def email_unique(email: str):
-    if seller_collection.find_one({"email": email}):
+async def email_unique(email: str):
+    if await seller_collection.find_one({'email': email}):
         raise HTTPException(status_code=400, detail="Email already in use")
+
+async def check_seller(id: str):
+    if await seller_collection.find_one({'_id': parse_object_id(id)}) is None:    
+        raise HTTPException(status_code=404, detail="Seller is not found")
 
 @app.post('/product',
     response_description="Add new product",
@@ -30,6 +34,7 @@ def email_unique(email: str):
     status_code=status.HTTP_201_CREATED,
     response_model_by_alias=False,)
 async def add_product(product: Product):
+    await check_seller(product.seller_id)
     new_product = await product_collection.insert_one(
         product.model_dump(by_alias=True, exclude=['id'])
     )
@@ -69,6 +74,8 @@ async def update_product(id: str, product: UpdateProduct):
         k: v for k, v in product.model_dump(by_alias=True).items() if v is not None
     }
 
+    if 'seller_id' in product.keys():
+        await check_seller(product['seller_id'])
     if len(product) >= 1:
         update_product = await product_collection.find_one_and_update(
             {"_id": parse_object_id(id)},
@@ -93,7 +100,7 @@ async def update_product(id: str, product: UpdateProduct):
     status_code=status.HTTP_201_CREATED
 )
 async def add_seller(seller: Seller):
-    email_unique(seller.email)
+    await email_unique(seller.email)
     seller.password = pwd_context.hash(seller.password)
     new_seller = await seller_collection.insert_one(
         seller.model_dump(by_alias=True, exclude=['id'])

@@ -13,6 +13,7 @@ class Product(BaseModel):
     price: int
     discount: int
     discount_price: float
+    seller_id: PyObjectId = Field(default=None)
     model_config = ConfigDict(
         populate_by_name=True,
         arbitrary_types_allowed=True,
@@ -24,6 +25,7 @@ class UpdateProduct(BaseModel):
     price: Optional[int] = None
     discount: Optional[int] = None
     discount_price: Optional[float] = None
+    seller_id: Optional[PyObjectId] = None
     model_config = ConfigDict(
         populate_by_name=True,
         arbitrary_types_allowed=True,
