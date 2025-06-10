@@ -20,10 +20,10 @@ class Product(BaseModel):
     )
 
 class UpdateProduct(BaseModel):
-    name: Optional[str]
-    price: Optional[int]
-    discount: Optional[int]
-    discount_price: Optional[float]
+    name: Optional[str] = None
+    price: Optional[int] = None
+    discount: Optional[int] = None
+    discount_price: Optional[float] = None
     model_config = ConfigDict(
         populate_by_name=True,
         arbitrary_types_allowed=True,
