@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field, ConfigDict
+from pydantic import BaseModel, Field, ConfigDict, EmailStr
 from pydantic.functional_validators import BeforeValidator
 from typing import Optional
 from typing_extensions import Annotated
@@ -24,6 +24,17 @@ class UpdateProduct(BaseModel):
     price: Optional[int] = None
     discount: Optional[int] = None
     discount_price: Optional[float] = None
+    model_config = ConfigDict(
+        populate_by_name=True,
+        arbitrary_types_allowed=True,
+        json_encoders={ObjectId: str}
+    )
+
+class Seller(BaseModel):
+    id: Optional[PyObjectId] = Field(alias='_id', default=None)
+    username: str
+    email: EmailStr
+    password: str
     model_config = ConfigDict(
         populate_by_name=True,
         arbitrary_types_allowed=True,
