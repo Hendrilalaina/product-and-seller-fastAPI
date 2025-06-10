@@ -5,7 +5,7 @@ from bson.errors import InvalidId
 from pymongo import ReturnDocument
 from passlib.context import CryptContext
 
-from schema import Product, UpdateProduct, Seller
+from schema import Product, UpdateProduct, Seller, User
 from database import product_collection, seller_collection
 
 app = FastAPI()
@@ -109,3 +109,20 @@ async def add_seller(seller: Seller):
         {'_id': new_seller.inserted_id}
     )
     return created_seller
+
+@app.post('/login',
+    response_description="Login the seller",
+    response_model=Seller,
+    response_model_by_alias=False
+)
+async def login_seller(user: User):
+    seller = await seller_collection.find_one(
+        {'email': user.email}
+    )
+    if not seller:
+        raise HTTPException(status_code=404, detail=f"User email {user.email} is not found")
+    
+    if not pwd_context.verify(secret=user.password, hash=seller['password']):
+        raise HTTPException(status_code=404, detail=f"Invalid password")
+    
+    return seller
