@@ -20,6 +20,10 @@ def parse_object_id(id: str):
             detail=f"'{id}' is not a valid ObjectId.",
         )
 
+def email_unique(email: str):
+    if seller_collection.find_one({"email": email}):
+        raise HTTPException(status_code=400, detail="Email already in use")
+
 @app.post('/product',
     response_description="Add new product",
     response_model=Product,
@@ -89,6 +93,7 @@ async def update_product(id: str, product: UpdateProduct):
     status_code=status.HTTP_201_CREATED
 )
 async def add_seller(seller: Seller):
+    email_unique(seller.email)
     seller.password = pwd_context.hash(seller.password)
     new_seller = await seller_collection.insert_one(
         seller.model_dump(by_alias=True, exclude=['id'])
