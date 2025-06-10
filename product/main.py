@@ -1,10 +1,21 @@
-from fastapi import FastAPI, status
+from fastapi import FastAPI, HTTPException, status
 from typing import List
+from bson import ObjectId
+from bson.errors import InvalidId
 
-from schema import Product
+from schema import Product, UpdateProduct
 from database import product_collection
 
 app = FastAPI()
+
+def parse_object_id(id: str):
+    try:
+        return ObjectId(id)
+    except InvalidId:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=f"'{id}' is not a valid ObjectId.",
+        )
 
 @app.post('/product',
     response_description="Add new product",
@@ -27,5 +38,17 @@ async def add_product(product: Product):
     response_model_by_alias=False
 )
 async def get_products():
-    products = await product_collection.find().to_list()
-    return products
+    return await product_collection.find().to_list()
+
+@app.get('/product/{id}',
+    response_description="Get a product by id",
+    response_model=Product,
+    response_model_by_alias=False
+)
+async def get_product(id: str):
+    if (
+        product := await product_collection.find_one({'_id': parse_object_id(id)})
+    ) is not None:
+        return product
+    
+    raise HTTPException(status_code=404, detail=f"Product {id} not found")
