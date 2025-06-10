@@ -42,3 +42,7 @@ class Seller(BaseModel):
         arbitrary_types_allowed=True,
         json_encoders={ObjectId: str}
     )
+
+class User(BaseModel):
+    email: EmailStr = None
+    password: str = None
