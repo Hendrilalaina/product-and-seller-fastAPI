@@ -3,11 +3,13 @@ from typing import List
 from bson import ObjectId
 from bson.errors import InvalidId
 from pymongo import ReturnDocument
+from passlib.context import CryptContext
 
-from schema import Product, UpdateProduct
-from database import product_collection
+from schema import Product, UpdateProduct, Seller
+from database import product_collection, seller_collection
 
 app = FastAPI()
+pwd_context = CryptContext(schemes=['sha256_crypt'])
 
 def parse_object_id(id: str):
     try:
@@ -24,7 +26,6 @@ def parse_object_id(id: str):
     status_code=status.HTTP_201_CREATED,
     response_model_by_alias=False,)
 async def add_product(product: Product):
-    print("Call API '/product'")
     new_product = await product_collection.insert_one(
         product.model_dump(by_alias=True, exclude=['id'])
     )
@@ -33,7 +34,7 @@ async def add_product(product: Product):
     )
     return created_product
 
-@app.get('/products',
+@app.get('/product',
     response_description="Get all products",
     response_model=List[Product],
     response_model_by_alias=False
@@ -80,3 +81,19 @@ async def update_product(id: str, product: UpdateProduct):
         return exist_product
     
     raise HTTPException(status_code=404, detail=f"Product {id} is not found")
+
+@app.post('/seller',
+    response_description="Add a seller",
+    response_model=Seller,
+    response_model_by_alias=False,
+    status_code=status.HTTP_201_CREATED
+)
+async def add_seller(seller: Seller):
+    seller.password = pwd_context.hash(seller.password)
+    new_seller = await seller_collection.insert_one(
+        seller.model_dump(by_alias=True, exclude=['id'])
+    )
+    created_seller = await seller_collection.find_one(
+        {'_id': new_seller.inserted_id}
+    )
+    return created_seller
