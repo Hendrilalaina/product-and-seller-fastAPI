@@ -1,4 +1,5 @@
 import motor.motor_asyncio
+
 from fastapi import FastAPI, Body, status
 from typing_extensions import Annotated
 from pydantic.functional_validators import BeforeValidator
@@ -10,7 +11,7 @@ app = FastAPI()
 
 MONGODB_URL="mongodb://127.0.0.1?retryWrites=true&w=majority"
 client = motor.motor_asyncio.AsyncIOMotorClient(MONGODB_URL)
-db = client.fastapi
+db = client.get_database('fastapi')
 product_collection = db.get_collection('product')
 
 # Represents an ObjectId field in the database.
