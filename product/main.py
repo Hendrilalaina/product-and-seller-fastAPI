@@ -4,12 +4,18 @@ from bson import ObjectId
 from bson.errors import InvalidId
 from pymongo import ReturnDocument
 from passlib.context import CryptContext
+from jose import jwt
+from datetime import datetime, timedelta
 
-from schema import Product, UpdateProduct, Seller, User
+from schema import Product, UpdateProduct, Seller, User, Token
 from database import product_collection, seller_collection
 
 app = FastAPI()
 pwd_context = CryptContext(schemes=['sha256_crypt'])
+
+SECRET_KEY = "eb45fc2d7e0c48a80db403d5156856b71a1b1d44009f603738f5ed495093add5"
+ALGORITHM = "HS256"
+ACCESS_TOKEN_EXPIRE = 20
 
 def parse_object_id(id: str):
     try:
@@ -19,6 +25,13 @@ def parse_object_id(id: str):
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail=f"'{id}' is not a valid ObjectId.",
         )
+
+def generate_token(data: dict):
+    to_encode = data.copy()
+    expire = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE)
+    to_encode.update({'exp': expire})
+    encode_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+    return encode_jwt
 
 async def email_unique(email: str):
     if await seller_collection.find_one({'email': email}):
@@ -112,7 +125,7 @@ async def add_seller(seller: Seller):
 
 @app.post('/login',
     response_description="Login the seller",
-    response_model=Seller,
+    response_model=Token,
     response_model_by_alias=False
 )
 async def login_seller(user: User):
@@ -125,4 +138,8 @@ async def login_seller(user: User):
     if not pwd_context.verify(secret=user.password, hash=seller['password']):
         raise HTTPException(status_code=404, detail=f"Invalid password")
     
-    return seller
+    access_token = generate_token(
+        data={'sub': seller['username']}
+    )
+    token = Token(access_token = access_token,token_type = 'bearer')
+    return token
