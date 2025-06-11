@@ -46,3 +46,7 @@ class Seller(BaseModel):
 class User(BaseModel):
     email: EmailStr = None
     password: str = None
+
+class Token(BaseModel):
+    access_token: str
+    token_type: str
