@@ -1,17 +1,20 @@
-from fastapi import FastAPI, HTTPException, status
+from fastapi import FastAPI, HTTPException, Depends, status
 from typing import List
 from bson import ObjectId
 from bson.errors import InvalidId
 from pymongo import ReturnDocument
 from passlib.context import CryptContext
-from jose import jwt
+from jose import jwt, JWTError
 from datetime import datetime, timedelta
+from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 
-from schema import Product, UpdateProduct, Seller, User, Token
+from schema import Product, UpdateProduct, Seller, User, Token, TokenData
 from database import product_collection, seller_collection
 
 app = FastAPI()
+
 pwd_context = CryptContext(schemes=['sha256_crypt'])
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl='login')
 
 SECRET_KEY = "eb45fc2d7e0c48a80db403d5156856b71a1b1d44009f603738f5ed495093add5"
 ALGORITHM = "HS256"
@@ -32,6 +35,26 @@ def generate_token(data: dict):
     to_encode.update({'exp': expire})
     encode_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encode_jwt
+
+async def get_current_user(token: str = Depends(oauth2_scheme)):
+    credentials_exception = HTTPException(
+        status_code=401,
+        detail="Invalid authentication credentials",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        username: str = payload.get("sub")
+        if username is None:
+            raise credentials_exception
+    except JWTError:
+        raise credentials_exception
+
+    user = await seller_collection.find_one({"username": username})
+    if user is None:
+        raise credentials_exception
+
+    return user  # This must match your response_model
 
 async def email_unique(email: str):
     if await seller_collection.find_one({'email': email}):
@@ -128,18 +151,28 @@ async def add_seller(seller: Seller):
     response_model=Token,
     response_model_by_alias=False
 )
-async def login_seller(user: User):
-    seller = await seller_collection.find_one(
-        {'email': user.email}
-    )
+async def login_seller(form_data: OAuth2PasswordRequestForm = Depends()):
+    # Note: form_data.username maps to the user's email
+    seller = await seller_collection.find_one({'email': form_data.username})
     if not seller:
-        raise HTTPException(status_code=404, detail=f"User email {user.email} is not found")
+        raise HTTPException(status_code=404, detail="User email not found")
     
-    if not pwd_context.verify(secret=user.password, hash=seller['password']):
-        raise HTTPException(status_code=404, detail=f"Invalid password")
-    
-    access_token = generate_token(
-        data={'sub': seller['username']}
+    if not pwd_context.verify(form_data.password, seller['password']):
+        raise HTTPException(status_code=401, detail="Invalid password")
+
+    access_token = jwt.encode(
+        {"sub": seller["username"], "exp": datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE)},
+        SECRET_KEY,
+        algorithm=ALGORITHM,
     )
-    token = Token(access_token = access_token,token_type = 'bearer')
-    return token
+
+    return Token(access_token=access_token, token_type="bearer")
+
+
+@app.get('/me', 
+    response_model=Seller,
+    response_model_exclude={"password"} 
+)
+async def read_current_user(current_user: dict = Depends(get_current_user)):
+    return current_user
+
