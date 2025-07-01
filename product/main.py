@@ -9,7 +9,7 @@ from database import product_collection, seller_collection
 app = FastAPI()
 
 @app.post('/seller',
-    response_description="Register a seller",
+    description="Register a seller",
     response_model=Seller,
     response_model_by_alias=False,
     status_code=status.HTTP_201_CREATED,)
@@ -26,7 +26,7 @@ async def add_seller(seller: Seller):
     return created_seller
 
 @app.post('/login',
-    response_description="Login the seller",
+    description="Login the seller",
     response_model=Token,
     response_model_by_alias=False,)
 async def login_seller(user_request: UserRequest):
@@ -49,14 +49,14 @@ async def read_current_user(current_user: dict = Depends(get_current_user)):
     return current_user
 
 @app.get('/product',
-    response_description="Get all products",
+    description="Get all products",
     response_model=List[Product],
     response_model_by_alias=False,)
 async def get_products():
     return await product_collection.find().to_list()
 
 @app.get('/product/{id}',
-    response_description="Get a product by id",
+    description="Get a product by id",
     response_model=Product,
     response_model_by_alias=False,)
 async def get_product(id: str):
@@ -68,7 +68,7 @@ async def get_product(id: str):
     raise HTTPException(status_code=404, detail=f"Product {id} not found")
 
 @app.post('/product',
-    response_description="Add new product",
+    description="Add new product",
     response_model=Product,
     status_code=status.HTTP_201_CREATED,
     response_model_by_alias=False,)
@@ -83,7 +83,7 @@ async def add_product(product: Product, seller: dict = Depends(get_current_user)
     return created_product
 
 @app.put('/product/{id}',
-    response_description="Update a product",
+    description="Update a product",
     response_model=Product,
     response_model_by_alias=False,)
 async def update_product(id: str, product: UpdateProduct, seller: dict = Depends(get_current_user)):
@@ -109,7 +109,7 @@ async def update_product(id: str, product: UpdateProduct, seller: dict = Depends
     raise HTTPException(status_code=404, detail=f"Product {id} is not found")
 
 @app.delete('/product/{id}',
-    response_description="Remove a product",)
+    description="Remove a product",)
 async def delete_product(id: str, seller: dict = Depends(get_current_user)):
     remove_product = await product_collection.find_one_and_delete(
         {"_id": parse_object_id(id), "seller_id": seller['_id']}
