@@ -1,5 +1,5 @@
 from fastapi import HTTPException, Depends
-from fastapi.security import OAuth2PasswordBearer
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from jose import jwt, JWTError
 from passlib.context import CryptContext
 from datetime import datetime, timedelta
@@ -11,7 +11,7 @@ ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE = 20
 
 pwd_context = CryptContext(schemes=['sha256_crypt'])
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl='login')
+security = HTTPBearer()
 
 def generate_token(data: dict):
     to_encode = data.copy()
@@ -20,13 +20,14 @@ def generate_token(data: dict):
     encode_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encode_jwt
 
-async def get_current_user(token: str = Depends(oauth2_scheme)):
+async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)):
     credentials_exception = HTTPException(
         status_code=401,
         detail="Invalid authentication credentials",
         headers={"WWW-Authenticate": "Bearer"},)
     
     try:
+        token = credentials.credentials
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         username: str = payload.get("sub")
         if username is None:

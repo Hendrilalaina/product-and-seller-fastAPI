@@ -1,11 +1,9 @@
 from fastapi import FastAPI, HTTPException, status, Depends
 from typing import List
 from pymongo import ReturnDocument
-from fastapi.security import OAuth2PasswordRequestForm
-
-from util import check_seller, email_unique, parse_object_id
+from util import email_unique, parse_object_id
 from auth import generate_token, get_current_user, hash_password, verify_password
-from schema import Product, UpdateProduct, Seller, Token
+from schema import Product, UpdateProduct, Seller, Token, UserRequest
 from database import product_collection, seller_collection
 
 app = FastAPI()
@@ -16,7 +14,7 @@ app = FastAPI()
     status_code=status.HTTP_201_CREATED,
     response_model_by_alias=False,)
 async def add_product(product: Product, seller: dict = Depends(get_current_user)):
-    product.seller_id = seller['_id']
+    product.seller_id = str(seller['_id'])
     new_product = await product_collection.insert_one(
         product.model_dump(by_alias=True, exclude=['id']))
 
@@ -95,13 +93,12 @@ async def add_seller(seller: Seller):
     response_description="Login the seller",
     response_model=Token,
     response_model_by_alias=False,)
-async def login_seller(form_data: OAuth2PasswordRequestForm = Depends()):
-    # Note: form_data.username maps to the user's email
-    seller = await seller_collection.find_one({'email': form_data.username})
+async def login_seller(user_request: UserRequest):
+    seller = await seller_collection.find_one({'email': user_request.email})
     if not seller:
         raise HTTPException(status_code=404, detail="User email not found")
     
-    if not verify_password(form_data.password, seller['password']):
+    if not verify_password(user_request.password, seller['password']):
         raise HTTPException(status_code=401, detail="Invalid password")
 
     access_token = generate_token(

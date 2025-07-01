@@ -41,7 +41,7 @@ class Seller(BaseModel):
         json_encoders={ObjectId: str}
     )
 
-class User(BaseModel):
+class UserRequest(BaseModel):
     email: EmailStr = None
     password: str = None
 
