@@ -1,4 +1,5 @@
 from fastapi import FastAPI, HTTPException, status, Depends
+from fastapi.middleware.cors import CORSMiddleware
 from typing import List
 from pymongo import ReturnDocument
 from util import email_unique, parse_object_id
@@ -12,6 +13,13 @@ app = FastAPI(
     contact={
         "email": "hendrilalaina@gmail.com",
     },)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=['*'],
+    allow_headers=["*"],)
 
 @app.post('/seller',
     tags=["Authentication"],
